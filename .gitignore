@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.pyc
+.pytest_cache/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+data/qdrant/
+logs/
+.hypothesis/

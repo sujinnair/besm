@@ -1,0 +1,148 @@
+operator:
+  locations:
+    - label: "home"
+      city: "Kozhikode"
+      state: "Kerala"
+      pin_codes:
+        - "673017"
+      localities:
+        - "Cheekkilode"
+      airport_iata: "CCJ"
+      primary: true
+    - label: "travel"
+      city: "Thiruvananthapuram"
+      state: "Kerala"
+      pin_codes:
+        - "695582"
+      localities:
+        - "Kazhakoottam"
+      airport_iata: "TRV"
+      primary: false
+  income_bracket: "10-15L"
+  occupation: "technology"
+  family_size: 1
+
+alerts:
+  primary_channel: "push"
+  # secondary_channel: "telegram" or "whatsapp"
+  min_confidence_threshold: 65
+  daily_limit: 5
+  quiet_hours_start: "22:00"
+  quiet_hours_end: "07:00"
+  timezone: "Asia/Kolkata"
+
+nodes:
+  # ── Commodity ────────────────────────────────────────────────────────────────
+  commodity_mandi: false
+  commodity_imd_rainfall: true   # rainfall deficit → leading indicator for food price spikes
+  commodity_import_duty: false
+  commodity_mrp_monitor: false
+
+  # ── Financial ────────────────────────────────────────────────────────────────
+  financial_forex: false
+  financial_brent_crude: false
+  financial_gmp: false
+  financial_ipo_subscription: true   # live IPO subscription rates (QIB/HNI/Retail)
+  financial_gold_sentiment: true     # MCX gold price + ETF flows + festive demand
+  financial_panchang: false
+
+  # ── Legal ────────────────────────────────────────────────────────────────────
+  legal_gazette: false
+  legal_state_portal: false
+  legal_slot_sentinel: false
+  legal_power_outage: false
+  legal_flight_status: false
+
+  # ── Health ───────────────────────────────────────────────────────────────────
+  health_aqi: true               # CPCB AQI readings + 24h forecast
+  health_imd_weather: true       # IMD 5-day forecast + extreme weather warnings
+  health_social_sentiment: true  # trending illness signals (flu/viral/dengue)
+
+  # ── Urban ────────────────────────────────────────────────────────────────────
+  urban_social_geotagged: false
+  urban_traffic: false
+
+  # ── Market ───────────────────────────────────────────────────────────────────
+  market_job_board: true         # tech skill salary trends + top hiring companies
+  market_municipal_gazette: false
+  market_infrastructure: false
+  market_business_directory: false
+
+commodity:
+  packaged_goods_categories:
+    - "edible_oils"
+    - "packaged_dal"
+    - "biscuits"
+    - "rice"
+    - "wheat_flour"
+
+financial:
+  monitored_flights: []
+
+legal:
+  monitored_portals:
+    - portal: "passport_seva"
+      service_type: "fresh_passport"
+    - portal: "rto"
+      service_type: "driving_license"
+    - portal: "vfs"
+      service_type: "uk_visa"
+
+health:
+  flu_forecast_pin_codes:
+    - "673017"
+  aqi_sensitivity_threshold: 150
+
+urban:
+  monitored_locations:
+    - name: "Cheekkilode Junction"
+      type: "venue"
+
+market:
+  zoning_zones:
+    - "Kozhikode Corporation"
+  business_gap_zones:
+    - "Cheekkilode"
+  skill_demand_skills:
+    - "python"
+    - "data_engineering"
+    - "llm_engineering"
+    - "rust"
+    - "cloud_architecture"
+    - "agentic ai"
+
+channels:
+  telegram:
+    enabled: true
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id_env: TELEGRAM_CHAT_ID
+  whatsapp:
+    enabled: false
+    account_sid_env: TWILIO_ACCOUNT_SID
+    auth_token_env: TWILIO_AUTH_TOKEN
+    from_number_env: TWILIO_WHATSAPP_FROM
+    to_number_env: OPERATOR_WHATSAPP_NUMBER
+  push:
+    enabled: true
+    ntfy_topic_env: NTFY_TOPIC
+    ntfy_server: "https://ntfy.sh"
+
+llm:
+  provider: "anthropic"
+  model: "claude-haiku-4-5-20251001"
+  api_key_env: "ANTHROPIC_API_KEY"
+  base_url: "https://api.anthropic.com/v1"
+  web_search_enabled: true
+
+vector_store:
+  path: "./data/qdrant"
+  embedding_model: "paraphrase-multilingual-mpnet-base-v2"
+
+system:
+  impact_check_interval_hours: 24
+  impact_confirmation_window_hours: 48
+
+logging:
+  level: "INFO"
+  log_file: "./logs/besm.log"
+  metrics_file: "./logs/metrics.jsonl"

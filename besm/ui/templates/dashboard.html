@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BESM · Signal Monitor</title>
+<style>
+:root {
+  --bg:      #0d0f1a;
+  --surface: #141720;
+  --surf2:   #1c2030;
+  --surf3:   #222638;
+  --border:  #252a3a;
+  --text:    #e2e8f0;
+  --muted:   #64748b;
+  --accent:  #6366f1;
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --amber:   #f59e0b;
+  --blue:    #3b82f6;
+  --purple:  #a855f7;
+  --cyan:    #06b6d4;
+  /* domain palette */
+  --d-commodity: #fb923c;
+  --d-financial: #22c55e;
+  --d-legal:     #a78bfa;
+  --d-health:    #60a5fa;
+  --d-urban:     #22d3ee;
+  --d-market:    #f472b6;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 20;
+}
+.logo { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted);
+  transition: background .4s, box-shadow .4s;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.upd-label { color: var(--muted); font-size: 11px; }
+.btn {
+  background: var(--surf2); border: 1px solid var(--border);
+  color: var(--text); padding: 4px 11px; border-radius: 6px;
+  cursor: pointer; font-size: 11px; transition: background .15s;
+}
+.btn:hover { background: var(--surf3); }
+
+/* ── Tab nav ── */
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ── Panes ── */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+main { padding: 20px 24px; max-width: 1440px; margin: 0 auto; }
+
+/* ── Stat cards ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
+.stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+.stat-value.green  { color: var(--green); }
+.stat-value.amber  { color: var(--amber); }
+.stat-value.blue   { color: var(--blue); }
+.stat-value.purple { color: var(--purple); }
+.stat-sub { color: var(--muted); font-size: 10px; margin-top: 4px; }
+
+/* ── Panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.panel-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted);
+}
+.panel-badge {
+  font-size: 10px; background: var(--surf2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 6px; color: var(--muted);
+}
+.panel-body { padding: 10px 14px; overflow-y: auto; }
+
+/* ── Overview layout ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 14px;
+}
+.right-stack { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Node grid ── */
+.node-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 10px 14px;
+}
+.node-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  background: var(--surf2); border: 1px solid var(--border);
+  border-radius: 7px; transition: border-color .15s;
+}
+.node-item:hover { border-color: var(--accent); }
+.node-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-ok         { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.dot-error      { background: var(--red);   box-shadow: 0 0 5px var(--red); animation: blink .8s infinite; }
+.dot-disabled   { background: var(--muted); opacity: .35; }
+.dot-never_run  { background: var(--amber); }
+.dot-batch_pending { background: var(--blue); }
+.dot-unknown    { background: var(--muted); }
+.node-info { flex: 1; min-width: 0; }
+.node-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node-name.dim { color: var(--muted); }
+.node-meta { font-size: 10px; color: var(--muted); }
+.node-count { font-size: 10px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+
+/* ── Signal feed ── */
+.feed-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.feed-item:last-child { border-bottom: none; }
+.domain-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; padding: 2px 5px; border-radius: 4px;
+  flex-shrink: 0; margin-top: 2px;
+}
+.d-commodity { background: #3d1f0a; color: var(--d-commodity); }
+.d-financial  { background: #0f2a14; color: var(--d-financial); }
+.d-legal      { background: #1e1a3d; color: var(--d-legal); }
+.d-health     { background: #0f1e3d; color: var(--d-health); }
+.d-urban      { background: #0a2530; color: var(--d-urban); }
+.d-market     { background: #2d0f25; color: var(--d-market); }
+.feed-body { flex: 1; min-width: 0; }
+.conf-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.conf-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.conf-fill { height: 100%; border-radius: 2px; }
+.fill-high { background: var(--green); }
+.fill-mid  { background: var(--amber); }
+.fill-low  { background: var(--red); }
+.conf-pct { font-size: 10px; font-weight: 600; width: 30px; text-align: right; flex-shrink: 0; }
+.feed-meta { font-size: 10px; color: var(--muted); }
+.supp-tag { font-size: 9px; background: #3d1515; color: var(--red); border-radius: 3px; padding: 1px 4px; }
+.tabs { display: flex; gap: 3px; }
+.ftab {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  cursor: pointer; border: 1px solid transparent; color: var(--muted);
+  background: transparent; transition: all .15s;
+}
+.ftab.active { background: var(--surf2); border-color: var(--border); color: var(--text); }
+
+/* ── Alert feed ── */
+.alert-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-icon { font-size: 13px; flex-shrink: 0; }
+.ok-icon   { color: var(--green); }
+.fail-icon { color: var(--red); }
+.alert-body { flex: 1; min-width: 0; }
+.alert-id { font-size: 10px; font-family: monospace; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alert-time { font-size: 10px; color: var(--muted); }
+
+/* ── Log terminal ── */
+.log-controls {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-wrap: wrap;
+}
+.log-controls select, .log-controls input {
+  background: var(--surf2); border: 1px solid var(--border);
+  color: var(--text); padding: 4px 8px; border-radius: 5px;
+  font-size: 11px; outline: none;
+}
+.log-controls input { flex: 1; min-width: 120px; }
+.log-controls input::placeholder { color: var(--muted); }
+.log-status { font-size: 10px; color: var(--muted); margin-left: auto; }
+.log-status.connected { color: var(--green); }
+.terminal {
+  background: #080a12;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  padding: 10px 14px;
+  overflow-y: auto;
+  height: calc(100vh - 230px);
+  min-height: 400px;
+}
+.log-line { display: flex; gap: 10px; padding: 1px 0; border-radius: 3px; }
+.log-line:hover { background: #0f1220; }
+.log-ts  { color: #3d4a6a; flex-shrink: 0; width: 85px; font-size: 10.5px; }
+.log-lvl { flex-shrink: 0; width: 56px; text-align: center; border-radius: 3px; font-size: 10px; font-weight: 700; padding: 0 4px; }
+.lvl-info    { background: #0f1e3d; color: var(--blue); }
+.lvl-warning { background: #2d1f0a; color: var(--amber); }
+.lvl-error   { background: #2d0f0f; color: var(--red); }
+.lvl-debug   { background: var(--surf2); color: var(--muted); }
+.lvl-plain   { background: transparent; color: var(--muted); font-weight: 400; font-size: 10px; }
+.log-body { flex: 1; min-width: 0; word-break: break-word; }
+.log-event { color: var(--text); }
+.log-fields { color: #4a5a7a; }
+.log-line.is-error .log-event { color: var(--red); }
+.log-line.is-warning .log-event { color: var(--amber); }
+.log-line.is-error { border-left: 2px solid #3d0f0f; padding-left: 8px; }
+.log-line.is-warning { border-left: 2px solid #3d2a0f; padding-left: 8px; }
+.log-logger { color: #2d3a5a; font-size: 10px; }
+.log-empty { color: var(--muted); padding: 32px; text-align: center; }
+
+/* ── Intelligence ── */
+.intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.chart-wrap { position: relative; padding: 14px; }
+.chart-wrap canvas { display: block; }
+.signals-table { width: 100%; border-collapse: collapse; }
+.signals-table th {
+  text-align: left; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.signals-table td {
+  padding: 7px 8px; border-bottom: 1px solid var(--border);
+  font-size: 11px; vertical-align: middle;
+}
+.signals-table tr:last-child td { border-bottom: none; }
+.signals-table tr:hover td { background: var(--surf2); }
+.snippet { color: var(--muted); font-size: 10px; display: block; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lead-chip {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  padding: 2px 5px; border-radius: 3px;
+  background: var(--surf2); border: 1px solid var(--border);
+  color: var(--muted);
+}
+.conf-mini { font-size: 11px; font-weight: 600; }
+.conf-mini.high { color: var(--green); }
+.conf-mini.mid  { color: var(--amber); }
+.conf-mini.low  { color: var(--red); }
+.domain-stat-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.domain-stat-row:last-child { border-bottom: none; }
+.domain-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.domain-stat-name { flex: 1; font-size: 11px; }
+.domain-stat-conf { font-size: 11px; font-weight: 600; color: var(--text); }
+.domain-stat-count { font-size: 10px; color: var(--muted); width: 36px; text-align: right; }
+.perf-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.perf-card {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+}
+.perf-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 4px; }
+.perf-value { font-size: 22px; font-weight: 700; }
+
+/* ── Location Pulse ── */
+.loc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.loc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.loc-card-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.loc-card-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600;
+}
+.loc-icon { font-size: 16px; }
+.loc-ts { font-size: 10px; color: var(--muted); }
+.loc-card-body { padding: 14px; }
+.loc-prose {
+  font-size: 11.5px; line-height: 1.7; color: #b0bcd0;
+  max-height: 200px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+}
+.loc-empty { color: var(--muted); font-size: 11px; text-align: center; padding: 20px; }
+.aqi-big {
+  font-size: 60px; font-weight: 800; line-height: 1;
+  margin-bottom: 4px; text-align: center; padding: 16px 0 8px;
+}
+.aqi-label { text-align: center; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+.aqi-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 12px; }
+.loc-loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px; color: var(--muted); font-size: 11px; gap: 8px;
+}
+.spinner {
+  width: 14px; height: 14px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Shared utils ── */
+.empty { text-align: center; color: var(--muted); padding: 28px 0; font-size: 11px; }
+.skeleton {
+  background: linear-gradient(90deg, var(--surf2) 25%, var(--surf3) 50%, var(--surf2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px; height: 12px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .overview-grid { grid-template-columns: 1fr; }
+  .intel-grid { grid-template-columns: 1fr; }
+  .loc-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .node-grid { grid-template-columns: 1fr; }
+  .loc-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="live-dot" id="live-dot"></div>
+    BESM &nbsp;·&nbsp; Signal Monitor
+    <span style="color:var(--muted);font-size:11px;font-weight:400" id="header-city">—</span>
+  </div>
+  <div class="header-right">
+    <span class="upd-label">Updated <span id="last-updated">—</span></span>
+    <button class="btn" onclick="refreshAll()">↺ Refresh</button>
+  </div>
+</header>
+
+<!-- ── Tab nav ── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <button class="tab-btn" data-tab="logs"     onclick="switchTab('logs')">Live Logs</button>
+  <button class="tab-btn" data-tab="intel"    onclick="switchTab('intel')">Intelligence</button>
+  <button class="tab-btn" data-tab="location" onclick="switchTab('location')">Location Pulse</button>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════ OVERVIEW ══ -->
+<div id="tab-overview" class="tab-pane active">
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Signals Today</div>
+      <div class="stat-value" id="s-signals">—</div>
+      <div class="stat-sub">processed by engine</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Alerts Today</div>
+      <div class="stat-value" id="s-alerts">—</div>
+      <div class="stat-sub">dispatched</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Delivery Rate</div>
+      <div class="stat-value" id="s-rate">—</div>
+      <div class="stat-sub">rolling 24 h</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Nodes</div>
+      <div class="stat-value blue" id="s-nodes">—</div>
+      <div class="stat-sub" id="s-nodes-sub">of 23 configured</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Confidence</div>
+      <div class="stat-value purple" id="s-conf">—</div>
+      <div class="stat-sub">all-time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Latency</div>
+      <div class="stat-value" id="s-latency">—</div>
+      <div class="stat-sub">reasoning layer</div>
+    </div>
+  </div>
+
+  <div class="overview-grid">
+
+    <!-- Node health -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Node Health</span>
+        <div style="display:flex;gap:6px">
+          <span class="panel-badge" id="nd-ok"   style="color:var(--green)">— ok</span>
+          <span class="panel-badge" id="nd-err"   style="color:var(--muted)">— err</span>
+          <span class="panel-badge" id="nd-pend"  style="color:var(--blue)">— pending</span>
+        </div>
+      </div>
+      <div class="node-grid" id="node-grid">
+        <div class="skeleton" style="height:36px"></div>
+        <div class="skeleton" style="height:36px"></div>
+        <div class="skeleton" style="height:36px"></div>
+        <div class="skeleton" style="height:36px"></div>
+      </div>
+    </div>
+
+    <!-- Right: signal feed + alert log -->
+    <div class="right-stack">
+
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Recent Signals</span>
+          <div class="tabs" id="domain-tabs">
+            <button class="ftab active" data-d="">All</button>
+            <button class="ftab" data-d="commodity">Comm</button>
+            <button class="ftab" data-d="financial">Fin</button>
+            <button class="ftab" data-d="legal">Legal</button>
+            <button class="ftab" data-d="health">Health</button>
+            <button class="ftab" data-d="market">Mkt</button>
+          </div>
+        </div>
+        <div class="panel-body" style="max-height:280px" id="signal-feed">
+          <div class="skeleton"></div><div class="skeleton" style="width:70%;margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Alert Delivery Log</span>
+          <span class="panel-badge" id="alert-badge">0</span>
+        </div>
+        <div class="panel-body" style="max-height:220px" id="alert-feed">
+          <div class="skeleton"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- /overview -->
+
+
+<!-- ═══════════════════════════════════════════════════════ LIVE LOGS ══ -->
+<div id="tab-logs" class="tab-pane">
+  <div class="panel" style="margin:0">
+    <div class="log-controls">
+      <select id="log-level-filter" onchange="applyLogFilter()">
+        <option value="">All levels</option>
+        <option value="info">INFO</option>
+        <option value="warning">WARNING</option>
+        <option value="error">ERROR</option>
+      </select>
+      <input id="log-search" type="text" placeholder="Filter by event / logger…" oninput="applyLogFilter()">
+      <button class="btn" onclick="toggleLogPause()" id="pause-btn">⏸ Pause</button>
+      <button class="btn" onclick="clearLogs()">Clear</button>
+      <span class="log-status" id="log-status">Connecting…</span>
+      <span class="panel-badge" id="log-count">0 lines</span>
+    </div>
+    <div class="terminal" id="terminal"></div>
+  </div>
+</div><!-- /logs -->
+
+
+<!-- ═══════════════════════════════════════════════════════ INTELLIGENCE ══ -->
+<div id="tab-intel" class="tab-pane">
+
+  <div class="perf-row" id="perf-row">
+    <div class="perf-card">
+      <div class="perf-label">Total Signals (all time)</div>
+      <div class="perf-value" id="p-total">—</div>
+    </div>
+    <div class="perf-card">
+      <div class="perf-label">Avg Confidence (all time)</div>
+      <div class="perf-value" style="color:var(--purple)" id="p-conf">—</div>
+    </div>
+    <div class="perf-card">
+      <div class="perf-label">Avg Reasoning Latency</div>
+      <div class="perf-value" style="color:var(--cyan)" id="p-lat">—</div>
+    </div>
+  </div>
+
+  <div class="intel-grid" style="margin-bottom:14px">
+    <!-- Volume chart -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Signal Volume — last 24 h</span>
+        <span class="panel-badge">by domain · hourly</span>
+      </div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chart-volume"></canvas>
+      </div>
+    </div>
+
+    <!-- Domain breakdown -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Domain Breakdown</span>
+        <span class="panel-badge" id="donut-total">0 total</span>
+      </div>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="chart-donut"></canvas>
+      </div>
+      <div class="panel-body" id="domain-stats-list" style="padding-top:0"></div>
+    </div>
+  </div>
+
+  <!-- Recent signals table -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Signal Log</span>
+      <span class="panel-badge">confidence · lead time · domain</span>
+    </div>
+    <div class="panel-body" style="max-height:340px;padding:0">
+      <table class="signals-table" id="signals-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Domain</th>
+            <th>Confidence</th>
+            <th>Lead Time</th>
+            <th>Latency</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="signals-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /intel -->
+
+
+<!-- ═══════════════════════════════════════════════════════ LOCATION ══ -->
+<div id="tab-location" class="tab-pane">
+  <div class="loc-grid" id="loc-grid">
+    <!-- Cards injected by JS -->
+  </div>
+</div><!-- /location -->
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const DOMAIN_COLORS = {
+  commodity: '#fb923c',
+  financial: '#22c55e',
+  legal:     '#a78bfa',
+  health:    '#60a5fa',
+  urban:     '#22d3ee',
+  market:    '#f472b6',
+};
+const DOMAINS = Object.keys(DOMAIN_COLORS);
+
+const LOC_NODES = [
+  { id: 'health_aqi',                 icon: '💨', title: 'Air Quality (AQI)',       color: '#60a5fa', interval: '60 min' },
+  { id: 'health_imd_weather',         icon: '🌤', title: 'Weather Forecast',        color: '#06b6d4', interval: '6 h' },
+  { id: 'commodity_imd_rainfall',     icon: '🌧', title: 'Rainfall Monitor',        color: '#fb923c', interval: '24 h' },
+  { id: 'financial_gold_sentiment',   icon: '🥇', title: 'Gold Sentiment',          color: '#f59e0b', interval: '4 h' },
+  { id: 'financial_ipo_subscription', icon: '📈', title: 'IPO Subscriptions',       color: '#22c55e', interval: '2 h' },
+  { id: 'market_job_board',           icon: '💼', title: 'Job Market Signals',      color: '#f472b6', interval: '24 h' },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let allSignals    = [];
+let activeDomain  = '';
+let logLines      = [];
+let logPaused     = false;
+let logConnected  = false;
+let logES         = null;
+let chartsInited  = false;
+let chartVolume   = null;
+let chartDonut    = null;
+let locLoaded     = false;
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+
+  if (name === 'logs'     && !logConnected) connectLogs();
+  if (name === 'intel'    && !chartsInited) { chartsInited = true; loadIntel(); }
+  if (name === 'location' && !locLoaded)    { locLoaded = true; loadLocation(); }
+}
+
+// ── Fetch helper ──────────────────────────────────────────────────────────────
+
+async function api(url) {
+  try {
+    const r = await fetch(url);
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+// ── Format helpers ────────────────────────────────────────────────────────────
+
+function fmtAgo(iso) {
+  if (!iso) return '—';
+  try {
+    const s = Math.round((Date.now() - new Date(iso)) / 1000);
+    if (s < 60)    return s + 's ago';
+    if (s < 3600)  return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  } catch { return iso; }
+}
+
+function fmtLead(h) {
+  if (h == null) return '—';
+  if (h < 1)    return Math.round(h*60) + 'm';
+  if (h < 24)   return h.toFixed(1) + 'h';
+  return Math.round(h/24) + 'd';
+}
+
+function fmtHour(h) {
+  // "2026-05-10T14:00" → "14:00"
+  return h ? h.slice(11, 16) : '';
+}
+
+function $id(id) { return document.getElementById(id); }
+
+// ── Refresh all (overview) ────────────────────────────────────────────────────
+
+async function refreshAll() {
+  const [summary, nodes, signals, alerts, trends] = await Promise.all([
+    api('/api/summary'),
+    api('/api/nodes'),
+    api('/api/signals'),
+    api('/api/alerts'),
+    api('/api/trends'),
+  ]);
+
+  renderSummary(summary, trends);
+  renderNodes(nodes);
+  allSignals = signals || [];
+  renderSignals(allSignals, activeDomain);
+  renderAlerts(alerts);
+
+  if (trends && chartsInited) updateCharts(trends);
+
+  $id('last-updated').textContent = new Date().toLocaleTimeString();
+}
+
+// ── Summary stats ─────────────────────────────────────────────────────────────
+
+function renderSummary(summary, trends) {
+  if (summary) {
+    $id('s-signals').textContent = summary.signals_today ?? '—';
+    $id('s-alerts').textContent  = summary.alerts_today  ?? '—';
+    const r = summary.delivery_rate;
+    const rEl = $id('s-rate');
+    rEl.textContent  = r != null ? r + '%' : '—';
+    rEl.className    = 'stat-value' + (r != null ? (r >= 90 ? ' green' : ' amber') : '');
+  }
+  if (trends && trends.overall) {
+    const o = trends.overall;
+    $id('s-conf').textContent    = o.avg_confidence ? o.avg_confidence + '%' : '—';
+    $id('s-latency').textContent = o.avg_latency_s  ? o.avg_latency_s + 's'  : '—';
+  }
+}
+
+// ── Node health grid ──────────────────────────────────────────────────────────
+
+function renderNodes(nodes) {
+  if (!nodes || !nodes.length) {
+    $id('node-grid').innerHTML = '<div class="empty" style="grid-column:1/-1">No node data — is Redis running?</div>';
+    return;
+  }
+  let ok = 0, err = 0, pend = 0;
+  const html = nodes.map(n => {
+    const dotCls = {
+      ok: 'dot-ok', error: 'dot-error', failing: 'dot-error',
+      disabled: 'dot-disabled', never_run: 'dot-never_run',
+      batch_pending: 'dot-batch_pending',
+    }[n.status] || 'dot-unknown';
+
+    if (n.status === 'ok')                         ok++;
+    if (n.status === 'error' || n.status === 'failing') err++;
+    if (n.status === 'batch_pending')              pend++;
+
+    const label = n.node_id
+      .split('_').slice(1).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+    const dimCls = n.status === 'disabled' ? ' dim' : '';
+    const sub = n.status === 'disabled'   ? 'disabled'
+              : n.status === 'never_run'  ? 'never run'
+              : n.last_success !== '—'    ? n.last_success : n.status;
+
+    return `<div class="node-item" title="${n.last_error || n.status}">
+      <div class="node-dot ${dotCls}"></div>
+      <div class="node-info">
+        <div class="node-name${dimCls}">${label}</div>
+        <div class="node-meta">${sub}</div>
+      </div>
+      ${n.signals_total ? `<div class="node-count">${n.signals_total}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  $id('node-grid').innerHTML = html;
+  $id('s-nodes').textContent = nodes.filter(n => n.enabled).length;
+  $id('nd-ok').textContent   = ok  + ' ok';
+  $id('nd-err').textContent  = err + ' err';
+  $id('nd-err').style.color  = err > 0 ? 'var(--red)' : 'var(--muted)';
+  $id('nd-pend').textContent = pend + ' pending';
+}
+
+// ── Signal feed ───────────────────────────────────────────────────────────────
+
+function renderSignals(sigs, filter) {
+  const feed = $id('signal-feed');
+  const list = filter ? sigs.filter(s => s.domain === filter) : sigs;
+  if (!list.length) { feed.innerHTML = '<div class="empty">No signals yet</div>'; return; }
+  feed.innerHTML = list.slice(0, 30).map(s => {
+    const c = Math.round(s.confidence || 0);
+    const cls = c >= 70 ? 'high' : c >= 50 ? 'mid' : 'low';
+    const lt  = fmtLead(s.lead_time_hours);
+    const ago = fmtAgo(s.ts);
+    return `<div class="feed-item">
+      <span class="domain-badge d-${s.domain}">${(s.domain||'?').slice(0,3).toUpperCase()}</span>
+      <div class="feed-body">
+        <div class="conf-row">
+          <div class="conf-track"><div class="conf-fill fill-${cls}" style="width:${c}%"></div></div>
+          <span class="conf-pct">${c}%</span>
+          ${s.suppressed ? '<span class="supp-tag">suppressed</span>' : ''}
+        </div>
+        <div class="feed-meta">${ago} · lead ${lt}${s.latency_s ? ' · ' + s.latency_s.toFixed(1)+'s' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+$id('domain-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.ftab');
+  if (!btn) return;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeDomain = btn.dataset.d;
+  renderSignals(allSignals, activeDomain);
+});
+
+// ── Alert feed ────────────────────────────────────────────────────────────────
+
+function renderAlerts(alerts) {
+  $id('alert-badge').textContent = alerts ? alerts.length : 0;
+  if (!alerts || !alerts.length) { $id('alert-feed').innerHTML = '<div class="empty">No alerts dispatched yet</div>'; return; }
+  $id('alert-feed').innerHTML = alerts.slice(0, 20).map(a => `
+    <div class="alert-item">
+      <span class="alert-icon ${a.success ? 'ok-icon' : 'fail-icon'}">${a.success ? '✓' : '✗'}</span>
+      <div class="alert-body">
+        <div class="alert-id">${a.alert_id || '—'}</div>
+        <div class="alert-time">${a.channel || '—'} · ${fmtAgo(a.ts)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Live logs ─────────────────────────────────────────────────────────────────
+
+const MAX_LOG_LINES = 500;
+
+function connectLogs() {
+  logConnected = true;
+  const status = $id('log-status');
+  status.textContent = 'Connecting…';
+  status.className   = 'log-status';
+
+  logES = new EventSource('/api/logs/stream');
+
+  logES.onopen = () => {
+    status.textContent = '● Connected';
+    status.className   = 'log-status connected';
+  };
+
+  logES.onmessage = e => {
+    if (!e.data || !e.data.trim()) return;
+    const parsed = parseLogLine(e.data.trim());
+    logLines.push(parsed);
+    if (logLines.length > MAX_LOG_LINES) logLines.shift();
+    $id('log-count').textContent = logLines.length + ' lines';
+    if (!logPaused) appendLogLine(parsed);
+  };
+
+  logES.onerror = () => {
+    status.textContent = '⚠ Disconnected';
+    status.className   = 'log-status';
+  };
+}
+
+function parseLogLine(raw) {
+  try {
+    const d = JSON.parse(raw);
+    return { type: 'json', raw, level: (d.level || 'info').toLowerCase(), data: d };
+  } catch {
+    return { type: 'plain', raw, level: 'plain' };
+  }
+}
+
+function renderLogLine(line) {
+  const lvl = line.level;
+  if (line.type === 'plain') {
+    return `<div class="log-line"><span class="log-ts"></span><span class="log-lvl lvl-plain">SYS</span><span class="log-body log-fields">${esc(line.raw)}</span></div>`;
+  }
+  const d   = line.data;
+  const ts  = d.timestamp ? d.timestamp.slice(11, 19) : '';
+  const evt = d.event || d.message || '';
+  // collect extra fields (exclude standard ones)
+  const skip = new Set(['timestamp','level','logger','event','message']);
+  const extras = Object.entries(d)
+    .filter(([k]) => !skip.has(k))
+    .map(([k, v]) => `<span class="log-fields">${esc(k)}=<span style="color:#5a7090">${esc(String(v))}</span></span>`)
+    .join(' ');
+  const errCls = lvl === 'error' ? ' is-error' : lvl === 'warning' ? ' is-warning' : '';
+  return `<div class="log-line${errCls}">
+    <span class="log-ts">${ts}</span>
+    <span class="log-lvl lvl-${lvl}">${lvl.toUpperCase().slice(0,4)}</span>
+    <span class="log-body">
+      <span class="log-event">${esc(evt)}</span>
+      ${d.logger ? `<span class="log-logger"> [${esc(d.logger.split('.').pop())}]</span>` : ''}
+      ${extras ? ' ' + extras : ''}
+    </span>
+  </div>`;
+}
+
+function appendLogLine(line) {
+  const term  = $id('terminal');
+  const lvl   = $id('log-level-filter').value;
+  const srch  = $id('log-search').value.toLowerCase();
+  if (lvl  && line.level !== lvl)               return;
+  if (srch && !line.raw.toLowerCase().includes(srch)) return;
+
+  const div = document.createElement('div');
+  div.innerHTML = renderLogLine(line);
+  const node = div.firstElementChild;
+  if (node) {
+    term.appendChild(node);
+    // Keep DOM trim to 500 children
+    while (term.children.length > MAX_LOG_LINES) term.removeChild(term.firstChild);
+    term.scrollTop = term.scrollHeight;
+  }
+}
+
+function applyLogFilter() {
+  const term  = $id('terminal');
+  const lvl   = $id('log-level-filter').value;
+  const srch  = $id('log-search').value.toLowerCase();
+  term.innerHTML = '';
+  const filtered = logLines.filter(l =>
+    (!lvl  || l.level === lvl) &&
+    (!srch || l.raw.toLowerCase().includes(srch))
+  );
+  filtered.forEach(l => {
+    const div = document.createElement('div');
+    div.innerHTML = renderLogLine(l);
+    const node = div.firstElementChild;
+    if (node) term.appendChild(node);
+  });
+  term.scrollTop = term.scrollHeight;
+}
+
+function toggleLogPause() {
+  logPaused = !logPaused;
+  $id('pause-btn').textContent = logPaused ? '▶ Resume' : '⏸ Pause';
+  if (!logPaused) {
+    // Flush buffered lines
+    const term = $id('terminal');
+    term.innerHTML = '';
+    logLines.forEach(l => appendLogLine(l));
+  }
+}
+
+function clearLogs() {
+  logLines = [];
+  $id('terminal').innerHTML = '';
+  $id('log-count').textContent = '0 lines';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Intelligence charts ───────────────────────────────────────────────────────
+
+async function loadIntel() {
+  const trends = await api('/api/trends');
+  if (!trends) return;
+  renderPerfRow(trends.overall);
+  initCharts(trends);
+  renderSignalsTable(await api('/api/signals') || []);
+}
+
+function renderPerfRow(o) {
+  if (!o) return;
+  $id('p-total').textContent = o.total_signals ?? '—';
+  $id('p-conf').textContent  = o.avg_confidence ? o.avg_confidence + '%' : '—';
+  $id('p-lat').textContent   = o.avg_latency_s  ? o.avg_latency_s + 's'  : '—';
+}
+
+function initCharts(trends) {
+  const labels  = trends.hourly.map(h => fmtHour(h.hour));
+  const gridClr = '#252a3a';
+  const textClr = '#64748b';
+
+  // ── Volume bar chart ──
+  if (chartVolume) chartVolume.destroy();
+  const vCtx = $id('chart-volume').getContext('2d');
+  chartVolume = new Chart(vCtx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: DOMAINS.map(d => ({
+        label: d,
+        data: trends.hourly.map(h => h[d] || 0),
+        backgroundColor: DOMAIN_COLORS[d] + 'cc',
+        borderRadius: 2,
+        borderSkipped: false,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index' } },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: gridClr },
+          ticks: { color: textClr, maxTicksLimit: 12 },
+        },
+        y: {
+          stacked: true,
+          grid: { color: gridClr },
+          ticks: { color: textClr, stepSize: 1 },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+
+  // ── Donut chart ──
+  const totals = trends.domain_totals || {};
+  const dLabels = Object.keys(totals);
+  const dData   = Object.values(totals);
+  const dColors = dLabels.map(d => DOMAIN_COLORS[d] || '#6b7280');
+  const grandTotal = dData.reduce((a,b) => a+b, 0);
+  $id('donut-total').textContent = grandTotal + ' total';
+
+  if (chartDonut) chartDonut.destroy();
+  const dCtx = $id('chart-donut').getContext('2d');
+  chartDonut = new Chart(dCtx, {
+    type: 'doughnut',
+    data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: dColors, borderWidth: 0, hoverOffset: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} (${grandTotal ? Math.round(ctx.parsed/grandTotal*100) : 0}%)`
+          }
+        },
+      },
+    },
+  });
+
+  // ── Domain stats list ──
+  const confMap = trends.domain_confidence || {};
+  $id('domain-stats-list').innerHTML = dLabels.map(d => {
+    const conf = confMap[d] || 0;
+    const confCls = conf >= 70 ? 'high' : conf >= 50 ? 'mid' : 'low';
+    return `<div class="domain-stat-row">
+      <div class="domain-dot" style="background:${DOMAIN_COLORS[d]||'#6b7280'}"></div>
+      <span class="domain-stat-name">${d}</span>
+      <span class="conf-mini ${confCls}">${conf}%</span>
+      <span class="domain-stat-count">${totals[d]}</span>
+    </div>`;
+  }).join('') || '<div class="empty">No data yet</div>';
+}
+
+function updateCharts(trends) {
+  renderPerfRow(trends.overall);
+  if (chartVolume) {
+    chartVolume.data.datasets.forEach((ds, i) => {
+      ds.data = trends.hourly.map(h => h[DOMAINS[i]] || 0);
+    });
+    chartVolume.update('none');
+  }
+}
+
+function renderSignalsTable(sigs) {
+  if (!sigs.length) {
+    $id('signals-tbody').innerHTML = `<tr><td colspan="6" class="empty">No signals recorded yet</td></tr>`;
+    return;
+  }
+  $id('signals-tbody').innerHTML = sigs.slice(0, 50).map(s => {
+    const c    = Math.round(s.confidence || 0);
+    const cls  = c >= 70 ? 'high' : c >= 50 ? 'mid' : 'low';
+    const supp = s.suppressed ? '<span class="supp-tag">suppressed</span>' : '';
+    return `<tr>
+      <td>${fmtAgo(s.ts)}</td>
+      <td><span class="domain-badge d-${s.domain}">${(s.domain||'?').toUpperCase()}</span></td>
+      <td><span class="conf-mini ${cls}">${c}%</span></td>
+      <td><span class="lead-chip">${fmtLead(s.lead_time_hours)}</span></td>
+      <td style="color:var(--muted)">${s.latency_s ? s.latency_s.toFixed(1)+'s' : '—'}</td>
+      <td>${supp || '<span style="color:var(--green);font-size:10px">✓ ok</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Location Pulse ────────────────────────────────────────────────────────────
+
+async function loadLocation() {
+  const grid = $id('loc-grid');
+
+  // Scaffold cards with loading state
+  grid.innerHTML = LOC_NODES.map(n => `
+    <div class="loc-card" id="lc-${n.id}">
+      <div class="loc-card-hdr" style="border-left:3px solid ${n.color}">
+        <div class="loc-card-title">
+          <span class="loc-icon">${n.icon}</span> ${n.title}
+        </div>
+        <span class="loc-ts" id="lc-ts-${n.id}">—</span>
+      </div>
+      <div class="loc-card-body">
+        <div class="loc-loading"><div class="spinner"></div> Fetching…</div>
+      </div>
+    </div>`).join('');
+
+  // Fetch all in parallel
+  await Promise.all(LOC_NODES.map(n => loadLocCard(n)));
+}
+
+async function loadLocCard(node) {
+  const data = await api(`/api/node-latest/${node.id}`);
+  const body = $id(`lc-${node.id}`).querySelector('.loc-card-body');
+  const tsEl = $id(`lc-ts-${node.id}`);
+
+  if (!data || !data.raw_text) {
+    body.innerHTML = `<div class="loc-empty">No data yet<br><span style="font-size:10px;color:var(--muted)">Node polls every ${node.interval}</span></div>`;
+    return;
+  }
+
+  tsEl.textContent = fmtAgo(data.t_signal);
+
+  if (node.id === 'health_aqi') {
+    renderAQICard(body, data.raw_text);
+  } else {
+    body.innerHTML = `<div class="loc-prose">${esc(data.raw_text)}</div>`;
+  }
+}
+
+function renderAQICard(body, text) {
+  const aqiNum = extractAQI(text);
+  const color  = aqiColor(aqiNum);
+  const label  = aqiLabel(aqiNum);
+  body.innerHTML = `
+    <div class="aqi-big" style="color:${color}">${aqiNum ?? '—'}</div>
+    <div class="aqi-label" style="color:${color}">${label}</div>
+    <hr class="aqi-divider">
+    <div class="loc-prose">${esc(text)}</div>`;
+}
+
+function extractAQI(text) {
+  const m = text.match(/AQI[:\s]+(?:of\s+|is\s+|at\s+)?(\d+)/i)
+         || text.match(/(\d+)\s*\((Good|Satisfactory|Moderate|Poor|Very Poor|Severe)\)/i);
+  return m ? parseInt(m[1]) : null;
+}
+
+function aqiColor(v) {
+  if (v == null) return 'var(--muted)';
+  if (v <= 50)   return '#22c55e';
+  if (v <= 100)  return '#84cc16';
+  if (v <= 200)  return '#f59e0b';
+  if (v <= 300)  return '#ef4444';
+  if (v <= 400)  return '#a855f7';
+  return '#7f1d1d';
+}
+function aqiLabel(v) {
+  if (v == null) return 'Unknown';
+  if (v <= 50)   return 'Good';
+  if (v <= 100)  return 'Satisfactory';
+  if (v <= 200)  return 'Moderate';
+  if (v <= 300)  return 'Poor';
+  if (v <= 400)  return 'Very Poor';
+  return 'Severe';
+}
+
+// ── Health check (dot indicator) ─────────────────────────────────────────────
+
+async function checkHealth() {
+  const dot  = $id('live-dot');
+  const data = await api('/api/health');
+
+  if (!data || data.status === 'down') {
+    dot.style.background = 'var(--red)';
+    dot.style.boxShadow  = 'none';
+    dot.style.animation  = 'none';
+    dot.title = data ? data.issues.join(', ') : 'Dashboard unreachable';
+  } else if (data.status === 'degraded') {
+    dot.style.background = 'var(--amber)';
+    dot.style.boxShadow  = '0 0 5px var(--amber)';
+    dot.style.animation  = 'blink 2s infinite';
+    dot.title = 'Issues: ' + data.issues.join(' · ');
+  } else {
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 6px var(--green)';
+    dot.style.animation  = 'blink 2s infinite';
+    dot.title = 'Backend running';
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+async function loadConfig() {
+  const data = await api('/api/config');
+  if (data) $id('header-city').textContent = data.primary_city;
+}
+
+checkHealth();
+setInterval(checkHealth, 10_000);
+refreshAll();
+setInterval(refreshAll, 30_000);
+loadConfig();
+</script>
+</body>
+</html>
