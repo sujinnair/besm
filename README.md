@@ -144,7 +144,7 @@ Requires a local Redis instance reachable at startup (`run_startup_checks()` ver
 
 MIT License
 
-Copyright (c) 2026 Sujin Nair
+Copyright (c) 2026 Sujin S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
